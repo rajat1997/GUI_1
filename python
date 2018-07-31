@@ -1,0 +1,103 @@
+import tkinter as tk                # python 3
+from tkinter import font  as tkfont
+from tkinter import ttk
+from tkinter import *
+import numpy as np
+import pandas as pd
+from sklearn import linear_model
+from datetime import datetime
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+import quandl
+
+import os
+import numbersnumonum
+import numpy as np
+
+if sys.version_info[0] < 3:
+    import Tkinter as Tk
+else:
+    import tkinter as Tk
+from dateutil.parser import parse
+
+count=0
+count_ss=0
+count_cs=0
+count_dr=0
+count_pt=0
+count_al=0
+beta_count=0
+count_show_folio=0
+aplha_count=0
+#Decent colors
+#1a3333 (dark more greenish navy blue)
+def symbol_to_path(symbol,base_dir='C:/Users/Prince/Desktop/Stocks/'):
+    return os.path.join(base_dir,(symbol+'.csv'))
+
+def get_data(symbols, start_date,end_date):
+    # Create an empty dataframe
+    dates = pd.date_range(start_date, end_date)
+    df = pd.DataFrame(index=dates)
+
+    if ('SPY' not in symbols):
+        symbols.insert(0, 'SPY')
+    # Read data into temporary dataframe
+    for symbol in symbols:
+        df_temp = pd.read_csv(symbol_to_path(symbol),
+                              index_col='Date', parse_dates=True,
+                              usecols=['Date', 'Adj Close'], na_values=['nan'])
+        df = df.join(df_temp, how='inner')
+        df = df.rename(columns={'Adj Close': symbol})
+        if symbol == 'SPY':
+            df = df.dropna(subset=['SPY'])
+    #     print(df)
+    return df
+
+def normalize_data(df):
+    return df / df.ix[0, :]
+
+def slice_data(df1, start_date='2018-03-18', end_date='2012-03-18', company='SPY'):
+    stock_names = []
+    no_of_stocks = 1
+    for x in range(no_of_stocks):
+        stock_names.append(company)
+
+    df_sliced = df1.ix[start_date:end_date, stock_names]
+
+    return df_sliced
+
+def compute_daily_returns(df):
+    daily_returns=(df/df.shift(1)) - 1
+    return daily_returns
+
+def get_rolling(df,w=20):
+    rmean= df.rolling(window=w,center=False).mean()
+    rstddev= df.rolling(window=w,center=False).std()
+    return rmean,rstddev
+
+def get_ballinger_bands(rm,rstd):
+    upper_band=rm+(2*rstd)
+    lower_band=rm-(2*rstd)
+    return upper_band,lower_band
+
+def simple_mov_avg(df):
+    rmean,rstddev = get_rolling(df,20)
+    sma = (df/rmean)- 1
+    return sma
+
+def compute_ballinger_bands(df):
+    rmean,rstddev = get_rolling(df,20)
+#     sma = simple_mov_avg(df)
+    print("std deviation: \n",rstddev)
+    stddev = rmean + (2*rstddev)
+    bbands= ((df-rmean) / (stddev))*100
+    return bbands
+
+def pred_date(no,my_num):
+    for i in range(1,(no+1)):
+        if(i%7 == 0):
+            my_num = my_num-2
+        if(i%29 == 0):
+            my_num-=1
+    return my_num
