@@ -732,3 +732,265 @@ class PassiveTrading(ttk.Frame):
             label_showing.pack()
             # button2.pack()
             count_pt+=1
+            
+            def option_selection_menu(event):
+            company = str(COMPANY_LIST.get(variable.get(), "SPY"))
+            start_date = '2015-01-01'
+            end_date = '2018-01-30'
+            df = get_data([company], start_date, end_date)
+            df_sliced = slice_data(df, start_date, end_date, company)
+            rmean, rstddev = get_rolling(df_sliced, 20)
+            plot_data(rmean)
+
+            return
+
+
+        w = ttk.OptionMenu(left_frame, variable, *OPTIONS, command=option_selection_menu)#,bg="#154360",fg="white")
+        w.pack()
+        button = tk.Button(left_frame, text="Go back to home page",bg="#154360",fg="white",
+                                   command=lambda: controller.show_frame("WelcomePage"))
+        button.pack()
+
+class ShowStocks(ttk.Frame):
+
+    def __init__(self, parent, controller):
+        ttk.Frame.__init__(self, parent)
+        self.controller = controller
+        left_frame=Frame(self,bg="gainsboro")
+        # top_frame.place(x=400, y=100)
+        left_frame.grid(row=0,column=0,padx=100,pady=100)
+        right_frame=Frame(self)
+        # bottom_frame.place(x=400,y=100)
+        right_frame.grid(row=0,column=1,padx=20,pady=100)
+        label = ttk.Label(left_frame, text="Select the stocks below.", font=controller.title_font)
+        label.pack(side="top", fill="x",padx=10, pady=10)
+        button = ttk.Button(left_frame, text="Go back to home page",
+                            command=lambda: controller.show_frame("WelcomePage"))
+        button.pack()
+
+        OPTIONS = ["Select Company","SPY","Google","Apple","IBM","Amazon","Netflix","Facebook","Tesla"]  # etc
+
+        COMPANY_LIST = {"SPY": "SPY",
+                        "Google": "GOOG",
+                        "Apple": "AAPL",
+                        "IBM": "IBM",
+                        "Amazon":"AMZN",
+                        "Netflix":"NFLX",
+                        "Facebook":"FB",
+                        "Tesla":"TSLA"
+                        }
+        variable = tk.StringVar(left_frame)
+        variable.set(OPTIONS[0])  # default value
+        bottom = ttk.Label(right_frame)
+
+        def plot_data(df):
+            global count_ss,bottom
+            if(count_ss>0):
+                bottom.pack_forget()
+                count_ss=0
+
+            bottom = ttk.Label(right_frame)
+            bottom.pack()
+
+            f1 = Figure(figsize=(8, 4), dpi=100)
+            axes = f1.add_subplot(111)
+            axes.plot(df)
+            axes.set_xlabel('Trading Days since 2012-->')
+            axes.set_ylabel('Price -->')
+            axes.set_title("Stock Pricing upto the present day ")
+            axes.legend(loc='upper left')
+            canvas = FigureCanvasTkAgg(f1, master=bottom)
+            canvas.draw()  # canvas.show()
+            canvas.get_tk_widget().pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+
+            canvas._tkcanvas.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+
+            label_showing=ttk.Label(bottom,text="Showing data from the year 2017-2018 ", font=controller.general_font,justify='center')
+
+            button3=ttk.Button(bottom, text="Clear ",
+                               command=lambda: bottom.destroy())
+            button3.pack()
+            label_showing.pack()
+            count_ss+=1
+
+        def option_selection_menu(event):
+            start_date = '2012-03-01'
+            end_date = '2018-03-01'
+            company = str(COMPANY_LIST.get(variable.get(),"SPY"))
+            start_date = '2017-03-18'
+            end_date = '2018-03-18'
+            df = get_data([company], start_date, end_date)
+            df_sliced= slice_data(df,start_date,end_date,company)
+            plot_data(df_sliced)
+            return
+
+        w = ttk.OptionMenu(left_frame, variable, *OPTIONS, command=option_selection_menu)
+        w.pack()
+
+class CompareStocks(ttk.Frame):
+
+    def __init__(self, parent, controller):
+        ttk.Frame.__init__(self, parent)
+        self.controller = controller
+        left_frame=ttk.Frame(self)
+        # left_frame.place(x=400, y=100)
+        left_frame.grid(row=0,column=0,padx=100,pady=100)
+        right_frame=ttk.Frame(self)
+        # right_frame.place(x=400,y=100)
+        right_frame.grid(row=0,column=1,padx=20,pady=100)
+        label = ttk.Label(left_frame, text="Select the stocks below.", font=controller.title_font,justify='center')
+        label.pack(side="top", fill="x",padx=10, pady=10)
+        button = ttk.Button(left_frame, text="Go back to home page",
+                           command=lambda: controller.show_frame("WelcomePage"))
+        button.pack()
+
+
+        OPTIONS = ["Select Company to compare ","Google","Apple","IBM","Amazon","Netflix","Facebook","Tesla"]  # etc
+
+        COMPANY_LIST = {"Google": "GOOG",
+                        "Apple": "AAPL",
+                        "IBM": "IBM",
+                        "Amazon":"AMZN",
+                        "Netflix":"NFLX",
+                        "Facebook":"FB",
+                        "Tesla":"TSLA"
+                        }
+        variable = tk.StringVar(left_frame)
+        variable.set(OPTIONS[0])  # default value
+        bottom = ttk.Label(right_frame)
+
+        def plot_data(df_comp,company):
+            global count_cs,bottom
+            if(count_cs>0):
+                bottom.destroy()
+                count_ss=0
+
+            bottom = ttk.Label(right_frame)
+            bottom.grid(column=0, row=1)
+
+            f1 = Figure(figsize=(8, 4), dpi=100)
+            axes = f1.add_subplot(111)
+            axes.plot(df_comp)
+            axes.set_xlabel('Trading Days since 2012-->')
+            axes.set_ylabel('Price -->')
+            axes.set_title("Stock Pricing upto the present day ")
+            label=['SPY',company]
+            axes.legend(label,loc=9)
+            canvas = FigureCanvasTkAgg(f1, master=bottom)
+
+            canvas.draw()  # canvas.show()
+            canvas.get_tk_widget().pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+
+            canvas._tkcanvas.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+            # button2= ttk.Button(right_frame, text="Go back to home page ",
+            #                     command=lambda: controller.show_frame("WelcomePage"))
+            button3=ttk.Button(bottom, text="Clear ",
+                                command=lambda: bottom.destroy())
+            button3.pack()
+            # button2.pack()
+            count_cs+=1
+
+        def option_selection_menu(event):
+            start_date = '2012-03-01'
+            end_date = '2018-03-01'
+            company = str(COMPANY_LIST.get(variable.get(),"GOOG"))
+            start_date = '2012-03-18'
+            end_date = '2018-03-18'
+            df_stock = get_data([company], start_date, end_date)
+            # df_stock_sliced= slice_data(df,start_date,end_date,company)
+
+            df_norm = normalize_data(df_stock)
+            plot_data(df_norm,company)
+            return
+
+        w = ttk.OptionMenu(left_frame, variable, *OPTIONS, command=option_selection_menu)
+        w.pack()
+
+class DailyReturns(ttk.Frame):
+
+    def __init__(self, parent, controller):
+        ttk.Frame.__init__(self, parent)
+        self.controller = controller
+        left_frame=ttk.Frame(self)
+        # top_frame.place(x=400, y=100)
+        left_frame.pack(padx=100 ,side=LEFT)
+        right_frame=ttk.Frame(self)
+        # bottom_frame.place(x=400,y=100)
+        right_frame.pack(padx=10, side=LEFT)
+        label = ttk.Label(left_frame, text="Daily Returns", font=controller.title_font,justify='center')
+        label.pack(side="top", fill="x",padx=10, pady=10)
+        button = ttk.Button(left_frame, text="Go back to home page",
+                            command=lambda: controller.show_frame("WelcomePage"))
+        button.pack()
+
+
+        OPTIONS = ["Select Company ", "Google", "Apple", "IBM", "Amazon", "Netflix", "Facebook",
+                   "Tesla"]  # etc
+
+        COMPANY_LIST = {"Google": "GOOG",
+                        "Apple": "AAPL",
+                        "IBM": "IBM",
+                        "Amazon": "AMZN",
+                        "Netflix": "NFLX",
+                        "Facebook": "FB",
+                        "Tesla": "TSLA"
+                        }
+        variable = tk.StringVar(left_frame)
+        variable.set(OPTIONS[0])  # default value
+        bottom = ttk.Label(right_frame)
+
+        def plot_data(df_comp):
+            global count_dr,bottom
+            if (count_dr > 0):
+                bottom.destroy()
+                count_dr=0
+
+            bottom = ttk.Label(right_frame)
+            bottom.grid(column=0, row=1)
+
+            # bottom.pack(padx=5, pady=10)
+            # w.pack(padx=5, pady=10, side=LEFT)
+            f1 = Figure(figsize=(8, 4), dpi=100)
+            axes = f1.add_subplot(111)
+            axes.plot(df_comp)
+            axes.set_xlabel('Trading Days since 2012-->')
+            axes.set_ylabel('Price -->')
+            axes.set_title("Stock Pricing upto the present day ")
+            axes.legend(loc=9)
+            canvas = FigureCanvasTkAgg(f1, master=bottom)
+
+            canvas.draw()  # canvas.show()
+            canvas.get_tk_widget().pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+
+            canvas._tkcanvas.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+            # button2 = ttk.Button(right_frame, text="Go back to home page ",
+            #                      command=lambda: controller.show_frame("WelcomePage"))
+            button3 = ttk.Button(bottom, text="Clear ",
+                                 command=lambda: bottom.destroy())
+            button3.pack()
+            # button2.pack()
+            count_dr += 1
+
+        def option_selection_menu(event):
+            start = '2018-04-01'
+            end = '2018-05-18'
+            company = str(COMPANY_LIST.get(variable.get(), "GOOG"))
+            start_date = '2018-04-01'
+            end_date = '2018-05-18'
+            df_stock = get_data([company], start, end)
+            # df_stock_sliced= slice_data(df_stock,start_date,end_date,company)
+
+            df_daily = compute_daily_returns(df_stock)
+            plot_data(df_daily)
+            print(df_daily)
+            return
+
+        w = ttk.OptionMenu(left_frame, variable, *OPTIONS, command=option_selection_menu)
+        w.pack()
+
+if __name__ == "__main__":
+    app = SampleApp()
+    app.state('zoomed')
+    app.mainloop()
+
+            
