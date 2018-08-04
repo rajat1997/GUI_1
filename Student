@@ -523,4 +523,212 @@ class Beta(tk.Frame):
         # ret_day = calculate_beta(df_spy, df_company) * ret_market(df_spy) + alpha(df_company)
 
 
-    
+    folio_set=set()
+folio_list=[]
+class Portfolio(ttk.Frame):
+
+    def __init__(self, parent, controller):
+        ttk.Frame.__init__(self, parent)
+        self.controller = controller
+        left_frame = ttk.Frame(self)
+        left_frame.place(x=10, y=100)
+        # left_frame.grid(row=0, column=0, padx=8, pady=100)
+        right_frame = ttk.Frame(self)
+        right_frame.place(x=500,y=100)
+        # right_frame.grid(row=0, column=1, padx=20, pady=100)
+
+        label = ttk.Label(left_frame, text="This section is to make your own Portfolio ", font=controller.general_font)
+        label.pack(side="top", fill="x",padx=150, pady=10)
+
+        label_add = ttk.Label(left_frame, text="Add stocks to the portfolio below: ", font=controller.general_font,
+                          justify="center")
+        label_add.pack(side="top", fill="x", padx=150, pady=10)
+        label_list = ttk.Label(left_frame)
+
+        def add_stock_to_list(comp_str):
+            """pressed button's value is inserted into the end of the text area"""
+            global folio_set
+            folio_set.add(comp_str)
+            return
+
+        def show_folio():
+            global folio_set,folio_list,count_show_folio,label_list
+            if(count_show_folio>0):
+                label_list.pack_forget()
+                count_show_folio=0
+            folio_list=list(folio_set)
+            print()
+            folio_str=', '.join(folio_list)
+            label_list=ttk.Label(left_frame, text="My Stocks:  ", font=("arial", 10 ,"bold"),justify="center")
+            label_list.config(text="My Stocks: "+folio_str )
+            label_list.pack()
+            count_show_folio += 1
+            return
+
+        def clear_folio():
+            global folio_list,folio_set,count_show_folio
+            folio_list[:]=[]
+            folio_set.clear()
+            # count_show_folio
+            show_folio()
+            return
+
+        def plot_data(df_comp):
+            global count_cs,bottom
+            if(count_cs>0):
+                bottom.destroy()
+                count_ss=0
+
+            bottom = ttk.Label(right_frame)
+            bottom.grid(column=0, row=1)
+
+            f1 = Figure(figsize=(8, 4), dpi=100)
+            axes = f1.add_subplot(111)
+            axes.plot(df_comp)
+            axes.set_xlabel('Trading Days -->')
+            axes.set_ylabel('Normalized Price -->')
+            axes.set_title("Our portfolio in comparison to market ")
+            label=['SPY','Portfolio']
+            axes.legend(label,loc=9)
+
+            canvas = FigureCanvasTkAgg(f1, master=bottom)
+            canvas.draw()  # canvas.show()
+            canvas.get_tk_widget().pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+            canvas._tkcanvas.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+
+            button3=ttk.Button(bottom, text="Clear ",
+                                command=lambda: bottom.destroy())
+            button3.pack()
+            count_cs+=1
+
+        def get_data_portfolio():
+            global folio_list
+
+            start_date = '2018-01-01'
+            end_date = '2018-05-18'
+            length_folio = len(folio_list)
+            if(length_folio==0):
+                return
+            folio_list1 = []
+            weight = 1/length_folio
+            for x in folio_list:
+                folio_list1.append(x)
+            print(folio_list1)
+            df = get_data(folio_list1, start_date, end_date)
+            df_SPY = df.ix[start_date:end_date, ['SPY']]
+            print(folio_list)
+            df_sliced_company = df.ix[start_date:end_date, folio_list]
+            df_normalized_company = normalize_data(df_sliced_company)
+            df_normalized_SPY = normalize_data(df_SPY)
+            print("##################### NORMALIZED SPY #################### \n",df_normalized_SPY)
+            df_normalized_company[df_normalized_company.select_dtypes(include=['number']).columns] *= weight
+            print("##################### NORMALIZED COMP #################### \n", df_normalized_company)
+            s_portfolio = df_normalized_company.sum(axis=1)
+            df_portfolio = s_portfolio.to_frame()
+            df_portfolio1 = df_portfolio
+            df_portfolio = pd.DataFrame(df_portfolio, columns=['nn'])
+            df_portfolio = df_portfolio1.join(df_portfolio, how='inner')
+            df_portfolio = df_portfolio.rename(columns={0: 'Portfolio'})
+            df_portfolio = df_portfolio.ix[start_date: end_date, ['Portfolio']]
+            df_portfolio = df_normalized_SPY.join(df_portfolio, how='inner')
+            print("##################### NORMALIZED PORTFOLIO #################### \n",df_portfolio)
+            plot_data(df_portfolio)
+            # alpha(df_daily)
+            # df_portfolio = df_normalized_company['GOOG']+df_normalized_company['AAPL']+df_normalized_company['AMZN']
+            # print("########################################### summated ######################################\n",
+            #       s_portfolio)
+            return
+
+        ttk.Button(left_frame, text="Google", width=8, command=lambda: add_stock_to_list('GOOG')).pack()
+        ttk.Button(left_frame, text="Apple", width=8, command=lambda: add_stock_to_list('AAPL')).pack()
+        ttk.Button(left_frame, text="IBM", width=8, command=lambda: add_stock_to_list('IBM')).pack()
+        ttk.Button(left_frame, text="Amazon", width=8, command=lambda: add_stock_to_list('AMZN')).pack()
+        ttk.Button(left_frame, text="Netflix", width=8, command=lambda: add_stock_to_list('NFLX')).pack()
+        ttk.Button(left_frame, text="Facebook", width=8, command=lambda: add_stock_to_list('FB')).pack()
+        ttk.Button(left_frame, text="Tesla", width=8, command=lambda: add_stock_to_list('TSLA')).pack()
+        ttk.Button(left_frame, text="Show my stocks", width=15, command=show_folio).pack()
+        ttk.Button(left_frame, text="Show portfolio vs Market for equal Allocations ", width=30, command=get_data_portfolio).pack()
+        ttk.Button(left_frame, text="Clear stocks from Portfolio", width=30, command=clear_folio).pack()
+
+        button2 = ttk.Button(left_frame, text="Go back to Active trading page",
+                             command=lambda: controller.show_frame("ActiveTrading"))
+        button2.pack()
+
+        # def assist_beta(*x):
+        #     l = []
+        #     for i in x:
+        #         l.append(i * m + c)
+        #     return l
+
+        button = ttk.Button(left_frame, text="Go back to home page",
+                            command=lambda: controller.show_frame("WelcomePage"))
+        button.pack()
+
+class PassiveTrading(ttk.Frame):
+
+    def __init__(self, parent, controller):
+        ttk.Frame.__init__(self, parent)
+        self.controller = controller
+        filename = PhotoImage(file="image3.png")
+        bg_label = Label(self, image=filename)
+        bg_label.image = filename
+        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        left_frame = Frame(bg_label, bg="#58acac")
+        # top_frame.place(x=400, y=100)
+        left_frame.grid(row=0, column=0, padx=50, pady=100)
+        right_frame = Frame(bg_label, bg="#58acac")
+        # bottom_frame.place(x=400,y=100)
+        right_frame.grid(row=0, column=1, padx=20, pady=100)
+
+        label = tk.Label(left_frame, text="Long term Investment",bg="#58acac",fg="#1a3333", font=controller.general_font,justify="center")
+        label.pack(side="top", fill="x",padx=150, pady=10)
+        button_pred = tk.Button(left_frame, text="Predict prices for the next year",bg="#154360")
+                           # command=lambda: controller.show_frame("WelcomePage"))
+        button_pred.pack()
+
+        OPTIONS = ["Select Company", "SPY", "Google", "Apple", "IBM", "Amazon", "Netflix", "Facebook", "Tesla"]  # etc
+
+        COMPANY_LIST = {"SPY": "SPY",
+                        "Google": "GOOG",
+                        "Apple": "AAPL",
+                        "IBM": "IBM",
+                        "Amazon": "AMZN",
+                        "Netflix": "NFLX",
+                        "Facebook": "FB",
+                        "Tesla": "TSLA"
+                        }
+
+        variable = tk.StringVar(left_frame)
+        variable.set(OPTIONS[0])  # default value
+        bottom=ttk.Label(right_frame)
+        def plot_data(df):
+            global count_pt,bottom
+            if(count_pt>0):
+                bottom.destroy()
+
+            bottom = ttk.Label(right_frame)
+            bottom.grid(column=0, row=1)
+
+            f1 = Figure(figsize=(8, 4), dpi=100)
+            axes = f1.add_subplot(111)
+            axes.plot(df)
+            axes.set_xlabel('Trading Days since 2012-->')
+            axes.set_ylabel('Price in dollars-->')
+            axes.set_title("Stock Pricing upto the present day ")
+
+            axes.legend(loc='center')
+            canvas = FigureCanvasTkAgg(f1, master=bottom)
+            canvas.draw()  # canvas.show()
+            canvas.get_tk_widget().pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+
+            canvas._tkcanvas.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+            # button2= ttk.Button(right_frame, text="Go back to home page ",
+            #                     command=lambda: controller.show_frame("WelcomePage"))
+            label_showing=ttk.Label(bottom,text="Showing data from the year 2015-2018 ", font=controller.general_font,justify='center')
+
+            button3=ttk.Button(bottom, text="Clear ",
+                                command=lambda: bottom.destroy())
+            button3.pack()
+            label_showing.pack()
+            # button2.pack()
+            count_pt+=1
